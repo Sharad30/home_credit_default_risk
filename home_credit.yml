@@ -25,3 +25,4 @@ dependencies:
         - dash-auth==1.0.0
         - tqdm
         - xgboost==0.72.1
+        - sklearn-pandas-1.7.0
