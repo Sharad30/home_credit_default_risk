@@ -1,10 +1,11 @@
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import BaseEstimator, TransformerMixin, clone
 import pandas as pd
 import numpy as np
 import os
 import warnings
 import logging
 import time
+from sklearn.preprocessing import StandardScaler, Imputer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -138,4 +139,122 @@ class ToDummiesTransformer(BaseEstimator, TransformerMixin):
         ----------
         self : object
         """
+        return self
+    
+
+class ToStandardScaler(BaseEstimator, TransformerMixin):
+    """ A Dataframe transformer that provide dummy variable encoding
+    """
+#     def __init__(self, cols):
+#         self.cols = cols
+        
+    def transform(self, X, **transformparams):
+        """ Returns a dummy variable encoded version of a DataFrame
+        
+        Parameters
+        ----------
+        X : pandas DataFrame
+        
+        Returns
+        ----------
+        trans : pandas DataFrame
+        
+        """
+        scaler = StandardScaler()
+        X[X.columns.values] = scaler.fit_transform(X)
+        return X
+
+    def fit(self, X, y=None, **fitparams):
+        """ Do nothing operation
+        
+        Returns
+        ----------
+        self : object
+        """
+        return self
+
+    
+class ToImputer(BaseEstimator, TransformerMixin):
+    """ A Dataframe transformer that provide dummy variable encoding
+    """
+    def __init__(self, cols):
+        self.cols = cols
+        
+    def transform(self, X, **transformparams):
+        """ Returns a dummy variable encoded version of a DataFrame
+        
+        Parameters
+        ----------
+        X : pandas DataFrame
+        
+        Returns
+        ----------
+        trans : pandas DataFrame
+        
+        """
+        imputer = Imputer(strategy='median')
+        X = pd.DataFrame(imputer.fit_transform(X), columns=self.cols)
+        return X
+
+    def fit(self, X, y=None, **fitparams):
+        """ Do nothing operation
+        
+        Returns
+        ----------
+        self : object
+        """
+        return self
+    
+   
+    
+class DataFrameFeatureUnion(BaseEstimator, TransformerMixin):
+    """ A DataFrame transformer that unites several DataFrame transformers
+    
+    Fit several DataFrame transformers and provides a concatenated
+    Data Frame
+    
+    Parameters
+    ----------
+    list_of_transformers : list of DataFrameTransformers
+        
+    """ 
+    def __init__(self, list_of_transformers):
+        self.list_of_transformers = list_of_transformers
+        
+    def transform(self, X, **transformparamn):
+        """ Applies the fitted transformers on a DataFrame
+        
+        Parameters
+        ----------
+        X : pandas DataFrame
+        
+        Returns
+        ----------
+        concatted :  pandas DataFrame
+        
+        """
+        
+        concatted = pd.concat([transformer.transform(X)
+                            for transformer in
+                            self.fitted_transformers_], axis=1).copy()
+        return concatted
+
+
+    def fit(self, X, y=None, **fitparams):
+        """ Fits several DataFrame Transformers
+        
+        Parameters
+        ----------
+        X : pandas DataFrame
+        y : not used, API requirement
+        
+        Returns
+        ----------
+        self : object
+        """
+        
+        self.fitted_transformers_ = []
+        for transformer in self.list_of_transformers:
+            fitted_trans = clone(transformer).fit(X, y=None, **fitparams)
+            self.fitted_transformers_.append(fitted_trans)
         return self
